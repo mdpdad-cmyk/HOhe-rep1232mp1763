@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Ownership Cost Tracker</title>
+    <script>
+        (function() {
+            var w = console.warn;
+            console.warn = function(msg) {
+                if (typeof msg === 'string' && msg.indexOf('cdn.tailwindcss.com') !== -1) return;
+                w.apply(console, arguments);
+            };
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; }
+        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(229, 231, 235, 0.5); }
+        input[type="number"]::-webkit-inner-spin-button { opacity: 1; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-900">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 glass-card bg-white/80 border-b">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="bg-blue-600 p-1.5 rounded-lg shadow-lg shadow-blue-200">
+                    <i data-lucide="home" class="text-white w-5 h-5"></i>
+                </div>
+                <h1 class="text-lg font-extrabold tracking-tight text-blue-900">Home Ownership Cost<span class="text-blue-500"> Tracker</span></h1>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <div class="mb-10 text-center">
+            <h2 class="text-4xl font-black text-slate-900 mb-4 tracking-tight">True Cost of Home Ownership</h2>
+            <p class="text-slate-500 max-w-2xl mx-auto font-medium">Track principal opportunity cost, interest, taxes, insurance, and HOA over the life of your loan.</p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-5 mb-8">
+            <h4 class="text-base font-black text-slate-900 mb-4 flex items-center gap-2">
+                <span class="w-1 h-5 bg-blue-600 rounded-full"></span>
+                Loan & Property Details
+            </h4>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Home Price ($)</label>
+                    <input type="text" id="homePrice" value="500,000" inputmode="numeric"
+                           class="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Down Payment ($)</label>
+                    <input type="text" id="downPayment" value="100,000" inputmode="numeric"
+                           class="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Loan Rate (%)</label>
+                    <input type="number" id="loanRate" value="6.5" min="0" max="30" step="0.125"
+                           class="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Loan Term (yr)</label>
+                    <input type="number" id="loanTerm" value="30" min="1" max="50" step="1"
+                           class="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Invest Rate (%)</label>
+                    <input type="number" id="investRate" value="7" min="0" max="20" step="0.5"
+                           class="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
+                           title="Assumed return if you invested principal instead">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Prop Tax (%)</label>
+                    <input type="number" id="propTaxRate" value="1.2" min="0" max="10" step="0.1"
+                           class="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Insurance ($/yr)</label>
+                    <input type="text" id="annualInsurance" value="2,400" inputmode="numeric"
+                           class="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">HOA ($/mo)</label>
+                    <input type="text" id="monthlyHOA" value="0" inputmode="numeric"
+                           class="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Appreciation (%/yr)</label>
+                    <input type="number" id="appreciationRate" value="3" min="-5" max="15" step="0.5"
+                           class="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
+                           title="Annual home price growth rate">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Evaluate at (yr)</label>
+                    <input type="number" id="evaluationTerm" value="10" min="1" max="50" step="1"
+                           class="w-full p-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
+                           title="Show summary and charts through this year (e.g. 10 = evaluate after 10 years)">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="calculate()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-1.5">
+                        <span>Calculate</span>
+                        <i data-lucide="calculator" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div id="summarySection" class="hidden mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-gradient-to-br from-slate-900 to-blue-900 rounded-3xl p-6 text-white shadow-xl">
+                    <p class="text-blue-300 text-xs font-bold uppercase tracking-widest mb-1">Net Cost (<span id="evalTermLabel">10</span>yr)</p>
+                    <p id="totalCost30yr" class="text-3xl font-black">—</p>
+                </div>
+                <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-xl">
+                    <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Opportunity Cost</p>
+                    <p id="oppCostTotal" class="text-2xl font-black text-blue-900">—</p>
+                    <p id="oppCostVsAllCash" class="text-[10px] text-slate-500 mt-0.5">—</p>
+                </div>
+                <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-xl">
+                    <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Interest Paid</p>
+                    <p id="interestTotal" class="text-2xl font-black text-slate-900">—</p>
+                </div>
+                <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-xl">
+                    <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Tax + Ins + HOA</p>
+                    <p id="otherTotal" class="text-2xl font-black text-slate-900">—</p>
+                </div>
+                <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-xl">
+                    <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Home Value (<span id="evalTermLabelHome">10</span>yr)</p>
+                    <p id="homeValue30yr" class="text-2xl font-black text-emerald-600">—</p>
+                    <p id="homeValueAppreciation" class="text-[10px] text-slate-500 mt-0.5">—</p>
+                </div>
+                <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-xl">
+                    <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Break-even Appreciation (%/yr)</p>
+                    <p id="breakevenRate" class="text-2xl font-black text-slate-900">—</p>
+                    <p class="text-slate-500 text-xs mt-1">Appreciation needed to offset total costs</p>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white rounded-3xl shadow-xl border border-slate-100 p-8">
+                    <h4 class="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-blue-600"></i>
+                        Cumulative Cost Over Time
+                    </h4>
+                    <div class="h-80">
+                        <canvas id="chartOverTime"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white rounded-3xl shadow-xl border border-slate-100 p-8">
+                    <h4 class="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
+                        <i data-lucide="pie-chart" class="w-5 h-5 text-blue-600"></i>
+                        Total at End of Eval Period
+                    </h4>
+                    <div class="h-80">
+                        <canvas id="chartEndOfLoan"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Annual data table through evaluation term -->
+            <div class="bg-white rounded-3xl shadow-xl border border-slate-100 p-6 mb-8 overflow-hidden">
+                <h4 class="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
+                    <i data-lucide="table" class="w-5 h-5 text-blue-600"></i>
+                    Annual Data Through Year <span id="tableEvalTermLabel">10</span>
+                </h4>
+                <div class="overflow-x-auto -mx-2">
+                    <table id="annualTable" class="w-full text-sm border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 bg-slate-50">
+                                <th class="text-left py-2 px-2 font-bold text-slate-600">Year</th>
+                                <th class="text-right py-2 px-2 font-bold text-slate-600">Principal</th>
+                                <th class="text-right py-2 px-2 font-bold text-slate-600">Interest</th>
+                                <th class="text-right py-2 px-2 font-bold text-slate-600">Tax+Ins+HOA</th>
+                                <th class="text-right py-2 px-2 font-bold text-slate-600">Opp Cost</th>
+                                <th class="text-right py-2 px-2 font-bold text-slate-600">Total Cost</th>
+                                <th class="text-right py-2 px-2 font-bold text-slate-600">Home Value</th>
+                                <th class="text-right py-2 px-2 font-bold text-slate-600">Net Cost</th>
+                                <th class="text-right py-2 px-2 font-bold text-slate-600">ROI Ann. %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="annualTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        let chartOverTime = null;
+        let chartEndOfLoan = null;
+        const STORAGE_KEY = 'homeCostTracker';
+
+        const inputIds = ['homePrice', 'downPayment', 'loanRate', 'loanTerm', 'investRate', 'propTaxRate', 'annualInsurance', 'monthlyHOA', 'appreciationRate', 'evaluationTerm'];
+
+        function loadSavedInputs() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    inputIds.forEach(id => {
+                        if (data[id] != null) {
+                            const el = document.getElementById(id);
+                            if (el) el.value = data[id];
+                        }
+                    });
+                }
+            } catch (e) {}
+        }
+
+        function saveInputs() {
+            const data = {};
+            inputIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) data[id] = el.value;
+            });
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+        }
+
+        loadSavedInputs();
+
+        function parseNum(el) {
+            const v = document.getElementById(el)?.value;
+            return parseFloat(String(v || '0').replace(/,/g, '')) || 0;
+        }
+        function formatNumInput(el) {
+            const inp = document.getElementById(el);
+            if (!inp) return;
+            const n = parseNum(el);
+            if (!isNaN(n)) inp.value = n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        }
+        function formatCommaInputs() {
+            ['homePrice', 'downPayment', 'annualInsurance', 'monthlyHOA'].forEach(formatNumInput);
+        }
+
+        function calculate() {
+            saveInputs();
+            const homePrice = parseNum('homePrice') || 500000;
+            const downPayment = parseNum('downPayment') || 0;
+            const loanRate = (parseFloat(document.getElementById('loanRate').value) || 6.5) / 100;
+            const loanTermYears = parseInt(document.getElementById('loanTerm').value) || 30;
+            const investVal = parseFloat(document.getElementById('investRate').value);
+            const investRate = (isNaN(investVal) ? 7 : investVal) / 100;
+            const propTaxRate = (parseFloat(document.getElementById('propTaxRate').value) || 1.2) / 100;
+            const annualInsurance = parseNum('annualInsurance') || 0;
+            const monthlyHOA = parseNum('monthlyHOA') || 0;
+            const apprVal = parseFloat(document.getElementById('appreciationRate').value);
+            const appreciationRate = isNaN(apprVal) ? 3 : apprVal;
+            const apprMultiplier = 1 + appreciationRate / 100;
+
+            const loanAmount = homePrice - downPayment;
+            const months = loanTermYears * 12;
+            const monthlyRate = loanRate / 12;
+            const investMonthlyRate = investRate / 12;
+
+            // Monthly payment (P&I)
+            const monthlyPI = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
+
+            // Annual costs
+            const annualPropTax = homePrice * propTaxRate;
+            const monthlyPropTax = annualPropTax / 12;
+            const monthlyInsurance = annualInsurance / 12;
+
+            const data = [];
+            let balance = loanAmount;
+            let totalPrincipalPaid = 0;
+            let totalInterestPaid = 0;
+            let cumulativeOppCost = 0;
+            let cumulativeInterest = 0;
+            let cumulativePropTax = 0;
+            let cumulativeInsurance = 0;
+            let cumulativeHOA = 0;
+
+            // Track principal payments for opportunity cost (each payment grows from its month to end)
+            const principalPayments = [];
+
+            for (let m = 0; m <= months; m++) {
+                let interestThisMonth = 0;
+                let principalThisMonth = 0;
+
+                if (m > 0) {
+                    interestThisMonth = balance * monthlyRate;
+                    principalThisMonth = Math.min(monthlyPI - interestThisMonth, balance);
+                    balance -= principalThisMonth;
+                    totalPrincipalPaid += principalThisMonth;
+                    totalInterestPaid += interestThisMonth;
+                    principalPayments.push({ month: m, amount: principalThisMonth });
+                }
+
+                // Opportunity cost: down payment from month 0 + each principal payment from its month
+                // At month m: down would grow (1+r)^m, principal paid in month i would grow (1+r)^(m-i)
+                const oppCostDownAtM = downPayment * (Math.pow(1 + investMonthlyRate, m) - 1);
+                let oppCostPrincipalAtM = 0;
+                for (let i = 0; i < principalPayments.length; i++) {
+                    const pmt = principalPayments[i];
+                    const monthsInvested = m - pmt.month;
+                    if (monthsInvested > 0) {
+                        oppCostPrincipalAtM += pmt.amount * (Math.pow(1 + investMonthlyRate, monthsInvested) - 1);
+                    }
+                }
+                cumulativeOppCost = oppCostDownAtM + oppCostPrincipalAtM;
+                cumulativeInterest = totalInterestPaid;
+                cumulativePropTax = monthlyPropTax * m;
+                cumulativeInsurance = monthlyInsurance * m;
+                cumulativeHOA = monthlyHOA * m;
+
+                const totalAtM = downPayment + totalPrincipalPaid + totalInterestPaid + cumulativePropTax + cumulativeInsurance + cumulativeHOA;
+                const trueCostAtM = totalInterestPaid + cumulativePropTax + cumulativeInsurance + cumulativeHOA + cumulativeOppCost;
+
+                data.push({
+                    month: m,
+                    year: Math.floor(m / 12),
+                    balance: balance,
+                    principal: downPayment + totalPrincipalPaid,
+                    interest: totalInterestPaid,
+                    propTax: cumulativePropTax,
+                    insurance: cumulativeInsurance,
+                    hoa: cumulativeHOA,
+                    oppCost: cumulativeOppCost,
+                    oppCostDown: oppCostDownAtM,
+                    oppCostPrincipal: oppCostPrincipalAtM,
+                    totalTrueCost: trueCostAtM
+                });
+            }
+
+            const evaluationTermInput = parseInt(document.getElementById('evaluationTerm').value) || 10;
+            const evalYears = Math.min(Math.max(1, evaluationTermInput), loanTermYears);
+            const evalMonth = evalYears * 12;
+            const evalIdx = Math.min(evalMonth, data.length - 1);
+            const evalRow = data[evalIdx];
+            const last = data[data.length - 1];
+
+            document.getElementById('evalTermLabel').textContent = evalYears;
+            document.getElementById('evalTermLabelHome').textContent = evalYears;
+
+            const homeValueAtEval = homePrice * Math.pow(apprMultiplier, evalYears);
+            const homeValueAtEnd = homePrice * Math.pow(apprMultiplier, loanTermYears);
+            const costRatioEval = evalRow.totalTrueCost / homePrice;
+            const breakevenRate = homePrice > 0 && costRatioEval >= 0
+                ? (Math.pow(1 + costRatioEval, 1 / evalYears) - 1) * 100
+                : null;
+            const netCostAtEval = evalRow.totalTrueCost - (homePrice * (Math.pow(apprMultiplier, evalYears) - 1));
+            const allCashOppCostEval = homePrice * (Math.pow(1 + investMonthlyRate, evalMonth) - 1);
+            const diffVsAllCash = evalRow.oppCost - allCashOppCostEval;
+            const ratesMatch = Math.abs(loanRate - investRate) < 0.0001;
+            let fvInterest = 0;
+            if (ratesMatch) {
+                let bal = loanAmount;
+                for (let mm = 1; mm <= Math.min(evalMonth, months); mm++) {
+                    const intPaid = bal * monthlyRate;
+                    const prinPaid = Math.min(monthlyPI - intPaid, bal);
+                    fvInterest += intPaid * Math.pow(1 + investMonthlyRate, evalMonth - mm);
+                    bal -= prinPaid;
+                }
+            }
+            document.getElementById('totalCost30yr').textContent = formatCurrency(Math.max(0, netCostAtEval));
+            document.getElementById('oppCostTotal').textContent = formatCurrency(evalRow.oppCost);
+            document.getElementById('oppCostVsAllCash').textContent = ratesMatch
+                ? 'Rates equal: opp + FV(interest) = all-cash ✓'
+                : (diffVsAllCash >= 0 ? 'vs all-cash: +' + formatCurrency(diffVsAllCash) : 'vs all-cash: ' + formatCurrency(diffVsAllCash));
+            document.getElementById('interestTotal').textContent = formatCurrency(evalRow.interest);
+            document.getElementById('otherTotal').textContent = formatCurrency(evalRow.propTax + evalRow.insurance + evalRow.hoa);
+            const appreciationAmountEval = homeValueAtEval - homePrice;
+            document.getElementById('homeValue30yr').textContent = formatCurrency(homeValueAtEval);
+            document.getElementById('homeValueAppreciation').textContent = '+' + formatCurrency(appreciationAmountEval) + ' appreciation';
+            document.getElementById('breakevenRate').textContent = breakevenRate != null
+                ? breakevenRate.toFixed(2) + '%'
+                : 'N/A';
+            document.getElementById('summarySection').classList.remove('hidden');
+
+            // Build chart data - yearly through evaluation term only
+            const chartYears = evalYears;
+            const yearlyLabels = [];
+            const yearlyOppCostDown = [];
+            const yearlyOppCostPrincipal = [];
+            const yearlyInterest = [];
+            const yearlyPropTax = [];
+            const yearlyInsurance = [];
+            const yearlyHOA = [];
+
+            // Cash-only scenario: full home price invested from day 0, no loan interest
+            // Home appreciation as cost offset; net cost = total cost - appreciation
+            const yearlyCashOnly = [];
+            const yearlyAppreciationOffset = [];
+            const yearlyNetCost = [];
+            for (let y = 0; y <= chartYears; y++) {
+                const m = y * 12;
+                const idx = Math.min(m, data.length - 1);
+                yearlyLabels.push(`Year ${y}`);
+                yearlyOppCostDown.push(data[idx].oppCostDown);
+                yearlyOppCostPrincipal.push(data[idx].oppCostPrincipal);
+                yearlyInterest.push(data[idx].interest);
+                yearlyPropTax.push(data[idx].propTax);
+                yearlyInsurance.push(data[idx].insurance);
+                yearlyHOA.push(data[idx].hoa);
+                const cashOppCost = homePrice * (Math.pow(1 + investMonthlyRate, m) - 1);
+                yearlyCashOnly.push(cashOppCost + (monthlyPropTax * m) + (monthlyInsurance * m) + (monthlyHOA * m));
+                const appr = homePrice * (Math.pow(apprMultiplier, y) - 1);
+                yearlyAppreciationOffset.push(appr);
+                const totalCostY = data[idx].totalTrueCost;
+                yearlyNetCost.push(Math.max(0, totalCostY - appr));
+            }
+
+            // Chart 1: Cumulative over time (stacked area)
+            // Net Cost uses stack 'stackNet' for independent baseline (same scale, not stacked on costs)
+            const ctx1 = document.getElementById('chartOverTime');
+            if (chartOverTime) chartOverTime.destroy();
+            chartOverTime = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: yearlyLabels,
+                    datasets: [
+                        { label: 'Opp Cost (Down Payment)', data: yearlyOppCostDown, borderColor: '#1d4ed8', backgroundColor: 'rgba(29, 78, 216, 0.5)', fill: true, stack: 'stack0', pointRadius: 0 },
+                        { label: 'Opp Cost (Principal)', data: yearlyOppCostPrincipal, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.5)', fill: true, stack: 'stack0', pointRadius: 0 },
+                        { label: 'Interest', data: yearlyInterest, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.5)', fill: true, stack: 'stack0', pointRadius: 0 },
+                        { label: 'Property Tax', data: yearlyPropTax, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.5)', fill: true, stack: 'stack0', pointRadius: 0 },
+                        { label: 'Insurance', data: yearlyInsurance, borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.5)', fill: true, stack: 'stack0', pointRadius: 0 },
+                        { label: 'HOA', data: yearlyHOA, borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.5)', fill: true, stack: 'stack0', pointRadius: 0 },
+                        { label: 'All Cash (no loan)', data: yearlyCashOnly, borderColor: '#64748b', backgroundColor: 'transparent', fill: false, borderWidth: 2, borderDash: [5, 5], pointRadius: 0, stack: 'stackRef', hidden: true },
+                        { label: 'Net Cost (after appreciation)', data: yearlyNetCost, borderColor: '#000000', backgroundColor: 'transparent', fill: false, borderWidth: 4, pointRadius: 0, stack: 'stackNet', order: -1 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 10, font: { size: 10 }, padding: 8 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ctx.dataset.label + ': ' + formatCurrency(ctx.raw)
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 8 } } },
+                        y: {
+                            stacked: true,
+                            ticks: { callback: v => '$' + (v/1000000).toFixed(1) + 'MM', font: { size: 8 } }
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: End of evaluation period breakdown (doughnut)
+            const ctx2 = document.getElementById('chartEndOfLoan');
+            if (chartEndOfLoan) chartEndOfLoan.destroy();
+            chartEndOfLoan = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Opp Cost (Down)', 'Opp Cost (Principal)', 'Interest', 'Property Tax', 'Insurance', 'HOA'],
+                    datasets: [{
+                        data: [evalRow.oppCostDown, evalRow.oppCostPrincipal, evalRow.interest, evalRow.propTax, evalRow.insurance, evalRow.hoa],
+                        backgroundColor: ['#1d4ed8', '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                    const pct = ((ctx.raw / total) * 100).toFixed(1);
+                                    return ctx.label + ': ' + formatCurrency(ctx.raw) + ' (' + pct + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Annual table: one row per year 0..evalYears
+            document.getElementById('tableEvalTermLabel').textContent = evalYears;
+            const tbody = document.getElementById('annualTableBody');
+            tbody.innerHTML = '';
+            for (let y = 0; y <= evalYears; y++) {
+                const m = Math.min(y * 12, data.length - 1);
+                const row = data[m];
+                const homeValY = homePrice * Math.pow(apprMultiplier, y);
+                const netCostY = Math.max(0, row.totalTrueCost - (homeValY - homePrice));
+                // Total outlay: principal (down + cum principal) + all costs (interest, tax, ins, HOA, opp cost)
+                const totalOutlay = row.principal + row.totalTrueCost;
+                // ROI uses equity (what you actually own), not gross home value — so ROI matches net cost sign
+                const equity = homeValY - row.balance;
+                let roiAnn = '';
+                if (y > 0 && totalOutlay > 0) {
+                    const roi = (equity - totalOutlay) / totalOutlay;
+                    const roiAnnualized = (Math.pow(1 + roi, 1 / y) - 1) * 100;
+                    roiAnn = roiAnnualized.toFixed(2) + '%';
+                } else {
+                    roiAnn = '—';
+                }
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-100 hover:bg-slate-50';
+                tr.innerHTML =
+                    '<td class="py-2 px-2 font-medium">' + y + '</td>' +
+                    '<td class="py-2 px-2 text-right">' + formatCurrency(row.principal) + '</td>' +
+                    '<td class="py-2 px-2 text-right">' + formatCurrency(row.interest) + '</td>' +
+                    '<td class="py-2 px-2 text-right">' + formatCurrency(row.propTax + row.insurance + row.hoa) + '</td>' +
+                    '<td class="py-2 px-2 text-right">' + formatCurrency(row.oppCost) + '</td>' +
+                    '<td class="py-2 px-2 text-right font-medium">' + formatCurrency(row.totalTrueCost) + '</td>' +
+                    '<td class="py-2 px-2 text-right text-emerald-600 font-medium">' + formatCurrency(homeValY) + '</td>' +
+                    '<td class="py-2 px-2 text-right">' + formatCurrency(netCostY) + '</td>' +
+                    '<td class="py-2 px-2 text-right font-medium">' + roiAnn + '</td>';
+                tbody.appendChild(tr);
+            }
+
+            lucide.createIcons();
+        }
+
+        function formatCurrency(n) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                maximumFractionDigits: 0
+            }).format(n);
+        }
+
+        inputIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', () => { saveInputs(); if (id === 'evaluationTerm') calculate(); });
+        });
+        ['homePrice', 'downPayment', 'annualInsurance', 'monthlyHOA'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('blur', () => formatNumInput(id));
+        });
+        formatCommaInputs();
+
+        // Initial calculation
+        calculate();
+    </script>
+</body>
+</html>
